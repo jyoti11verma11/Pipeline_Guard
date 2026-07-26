@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="8" time="2.166" timestamp="2026-07-26T08:34:04.403973+00:00" hostname="agent-env-e89056c9-eee8-4313-aec2-c59302901378"><testcase classname="tests.backend_test" name="test_get_reps" time="0.395" /><testcase classname="tests.backend_test" name="test_get_deals" time="0.099" /><testcase classname="tests.backend_test" name="test_get_deal_404" time="0.096" /><testcase classname="tests.backend_test" name="test_health_summary" time="0.097" /><testcase classname="tests.backend_test" name="test_extract_negotiation_globex" time="0.198" /><testcase classname="tests.backend_test" name="test_extract_closed_lost" time="0.096"><failure message="AssertionError: assert 'neutral' == 'negative'&#10;  &#10;  - negative&#10;  + neutral">backend/tests/backend_test.py:77: in test_extract_closed_lost
+    assert d["suggested_sentiment"] == "negative"
+E   AssertionError: assert 'neutral' == 'negative'
+E     
+E     - negative
+E     + neutral</failure></testcase><testcase classname="tests.backend_test" name="test_confirm_and_activity" time="0.385" /><testcase classname="tests.backend_test" name="test_seed_resets" time="0.237" /></testsuite></testsuites>
