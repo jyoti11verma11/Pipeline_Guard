@@ -1,0 +1,117 @@
+{
+  "theme": "dark_and_light",
+  "app_name": "PipelineGuard",
+  "typography": {
+    "headings": "Outfit, sans-serif",
+    "body": "Manrope, sans-serif",
+    "notes": "Ensure tight tracking on headings (-0.02em) and generous line-height on body text. DO NOT USE INTER OR ROBOTO."
+  },
+  "colors": {
+    "light": {
+      "--background": "210 40% 98%",
+      "--foreground": "222.2 47.4% 11.2%",
+      "--card": "0 0% 100%",
+      "--card-foreground": "222.2 47.4% 11.2%",
+      "--primary": "243 75% 59%",
+      "--primary-foreground": "210 40% 98%",
+      "--secondary": "214.3 31.8% 91.4%",
+      "--secondary-foreground": "222.2 47.4% 11.2%",
+      "--accent": "243 75% 95%",
+      "--accent-foreground": "243 75% 59%",
+      "--border": "214.3 31.8% 91.4%",
+      "--muted": "210 40% 96.1%",
+      "--muted-foreground": "215.4 16.3% 46.9%",
+      "--success": "142.1 76.2% 36.3%",
+      "--warning": "37.7 92.1% 50.2%",
+      "--danger": "346.8 77.2% 49.8%"
+    },
+    "dark": {
+      "--background": "226 27% 10%",
+      "--foreground": "210 40% 98%",
+      "--card": "226 25% 14%",
+      "--card-foreground": "210 40% 98%",
+      "--primary": "243 75% 65%",
+      "--primary-foreground": "210 40% 98%",
+      "--secondary": "226 25% 20%",
+      "--secondary-foreground": "210 40% 98%",
+      "--accent": "243 50% 20%",
+      "--accent-foreground": "243 75% 85%",
+      "--border": "226 25% 20%",
+      "--muted": "226 25% 20%",
+      "--muted-foreground": "215 20.2% 65.1%",
+      "--success": "142.1 70% 45%",
+      "--warning": "37.7 90% 55%",
+      "--danger": "346.8 77.2% 55%"
+    },
+    "strategy": "High-Contrast Technical. Deep Midnight Indigo base with sharp Blurple/Indigo primary accents. Flat solid surfaces with crisp 1px borders."
+  },
+  "layouts": {
+    "app_shell": "flex h-screen overflow-hidden bg-background. Sidebar on the left (w-64 shrink-0). Main content flex-1 overflow-y-auto. Desktop optimized.",
+    "sidebar": "Fixed, border-r border-border bg-card/50, full height. Links should have generous padding py-3 px-4 rounded-md. Active state must have a high-contrast indicator.",
+    "ingest_page": "Grid layout: grid-cols-1 md:grid-cols-2 gap-8 p-8. Left: Large Textarea h-[60vh] with subtle focus ring. Right: AI Suggestion Card displaying editable parsed fields.",
+    "pipeline_page": "Horizontal scrollable flex container for Kanban stages (p-8). Columns w-80 shrink-0 flex flex-col gap-4. Card-based deals.",
+    "health_dashboard": "Bento Grid: 3 summary metric cards (col-span-1), 1 large chart card for Rep Leaderboard (col-span-3 or full width) using Recharts.",
+    "deal_detail": "Two-column layout (p-8): Deal Info/Metadata (Left w-1/3) & Activity Timeline (Right w-2/3)."
+  },
+  "visual_enhancers": {
+    "cards": "Flat solid background, 1px border-border, subtle shadow-sm. Avoid heavy rounded corners (use max 8px). On hover: shadow-md -translate-y-1 transition-transform duration-200.",
+    "status_dots": "Use colored circles w-3 h-3 rounded-full. Green (Healthy), Yellow (Warning), Red (Stale). Add animate-pulse to Red dots.",
+    "ai_elements": "The AI Suggestion card should have a subtle glowing border or a slight primary-tinted background to distinguish it from static data.",
+    "buttons": "Pill-shaped or slightly rounded (rounded-md). High contrast on hover."
+  },
+  "components": {
+    "ui_library": "shadcn/ui (raw HTML + Tailwind customization allowed)",
+    "required_components": ["Button", "Card", "Input", "Textarea", "Badge", "Avatar", "Select"],
+    "icons": "lucide-react. Prefer clean, technical icons. NO emojis.",
+    "charts": "Recharts for the Health Dashboard bar chart. Ensure charts use theme variables (hsl(var(--primary))) for bars."
+  },
+  "images": [
+    {
+      "url": "https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwYXZhdGFyfGVufDB8fHx8MTc4NTA1NDM0MHww&ixlib=rb-4.1.0&q=85",
+      "category": "Avatar",
+      "description": "Sales Rep 1 (John)"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1527980965255-d3b416303d12?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwYXZhdGFyfGVufDB8fHx8MTc4NTA1NDM0MHww&ixlib=rb-4.1.0&q=85",
+      "category": "Avatar",
+      "description": "Sales Rep 2 (David)"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwzfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwYXZhdGFyfGVufDB8fHx8MTc4NTA1NDM0MHww&ixlib=rb-4.1.0&q=85",
+      "category": "Avatar",
+      "description": "Sales Rep 3 (Michael)"
+    },
+    {
+      "url": "https://images.pexels.com/photos/12396627/pexels-photo-12396627.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "category": "Avatar",
+      "description": "Sales Rep 4 (Sarah)"
+    }
+  ],
+  "accessibility": {
+    "contrast": "Ensure text meets APCA/WCAG standards. Use high-contrast for primary actions.",
+    "focus": "All interactive elements must have focus:ring-2 focus:ring-primary focus:outline-none.",
+    "testing": "All buttons, inputs, links, and cards MUST include a data-testid attribute in kebab-case."
+  },
+  "instructions_to_main_agent": [
+    "You are building a B2B SaaS dashboard tool (PipelineGuard). Follow standard technical UI layout principles.",
+    "Install and use 'lucide-react' for icons.",
+    "Install 'recharts' for the Health Dashboard visualization.",
+    "Update tailwind.config.js and index.css with the provided CSS variables to override Shadcn's default theme with the custom High-Contrast Midnight Indigo theme.",
+    "Include Google Fonts 'Outfit' and 'Manrope' in index.html and apply them in index.css.",
+    "Build a persistent Sidebar navigation component (4 links: Ingest, Pipeline, Health, Deal Detail).",
+    "On the Ingest Page, build a two-pane split: Textarea for raw input (left), and an AI Suggestion Card displaying editable mapped fields (Deal Stage, Next Step, Stakeholders, Sentiment) with an 'Accept Changes' CTA (right).",
+    "On the Pipeline Page, build a Kanban board with 3-4 columns (e.g., Lead, Qualified, Proposal, Closed). Each deal card MUST feature a freshness indicator dot (Green, Yellow, or Red).",
+    "On the Health Dashboard Page, display 3 stat cards (e.g., Total Pipeline, At-Risk Deals, Hygiene Score) and a Bar Chart using Recharts showing Hygiene Score by Rep.",
+    "On the Deal Detail Page, design an activity timeline component showing past interactions (newest first).",
+    "DO NOT use generic centered App layouts. Remove any text-align: center from global CSS.",
+    "Apply specific hover interactions (e.g., transform, box-shadow) on Kanban cards and primary buttons."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "DO NOT apply universal transitions (transition: all). Use specific properties (transition: transform 0.2s ease, opacity 0.2s ease) to prevent breaking transforms.",
+    "Never center-align the main app container. Maintain a left-aligned data-heavy SaaS layout.",
+    "Use generous padding (p-6, p-8) inside major layout panels and containers.",
+    "Add a data-testid attribute to all key interactive elements (buttons, links, inputs).",
+    "Do NOT use AI assistant emojis for icons. Use lucide-react icons exclusively.",
+    "Ensure dark colors are used independently without blending them into generic background gradients."
+  ]
+}
