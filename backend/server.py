@@ -115,7 +115,11 @@ def extract_from_text(text: str) -> dict:
     # Sentiment
     pos_hits = sum(1 for w in POSITIVE_WORDS if w in lower)
     neg_hits = sum(1 for w in NEGATIVE_WORDS if w in lower)
-    if pos_hits > neg_hits:
+    if suggested_stage == "Closed Lost":
+        sentiment = "negative"
+    elif suggested_stage == "Closed Won":
+        sentiment = "positive"
+    elif pos_hits > neg_hits:
         sentiment = "positive"
     elif neg_hits > pos_hits:
         sentiment = "negative"
