@@ -1,6 +1,8 @@
-import { NavLink } from "react-router-dom";
-import { ShieldCheck, Inbox, KanbanSquare, Activity, Sparkles } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { ShieldCheck, Inbox, KanbanSquare, Activity, Sparkles, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/context/AuthContext";
 
 const NAV = [
   { to: "/ingest", label: "Ingest", icon: Inbox, testid: "nav-ingest" },
@@ -9,6 +11,19 @@ const NAV = [
 ];
 
 export default function Sidebar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
+  }
+
+  const initials =
+    user && user.name
+      ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+      : "?";
+
   return (
     <aside
       data-testid="app-sidebar"
@@ -55,7 +70,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="px-4 py-4 border-t border-border">
+      <div className="px-4 py-4 border-t border-border space-y-3">
         <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
@@ -65,6 +80,34 @@ export default function Sidebar() {
             Paste any call or email — we suggest CRM updates instantly.
           </p>
         </div>
+
+        {user && (
+          <div
+            data-testid="sidebar-user"
+            className="flex items-center gap-2 rounded-md px-2 py-2 border border-border bg-card/60"
+          >
+            <Avatar className="w-8 h-8">
+              <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold truncate">{user.name}</div>
+              <div className="text-[10px] text-muted-foreground truncate">
+                {user.email}
+              </div>
+            </div>
+            <button
+              type="button"
+              data-testid="logout-btn"
+              onClick={handleLogout}
+              title="Sign out"
+              className="p-1.5 rounded text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

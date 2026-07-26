@@ -1,19 +1,21 @@
-from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import re
 import logging
-from pathlib import Path
-from pydantic import BaseModel, Field
+import bcrypt
+import jwt
+from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
-
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
 
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -23,6 +25,54 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 STAGES = ["Prospecting", "Qualified", "Negotiation", "Closed Won", "Closed Lost"]
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_TTL_HOURS = 24
+
+
+# ---------- Auth utils ----------
+def get_jwt_secret() -> str:
+    return os.environ["JWT_SECRET"]
+
+
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception:
+        return False
+
+
+def create_access_token(user_id: str, email: str) -> str:
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "type": "access",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_TTL_HOURS),
+    }
+    return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
+
+
+async def get_current_user(request: Request) -> dict:
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = auth_header[7:]
+    try:
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0, "password_hash": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 # ---------- Models ----------
@@ -42,7 +92,7 @@ class Deal(BaseModel):
     next_step: Optional[str] = None
     sentiment: Optional[str] = "neutral"
     stakeholders: List[str] = Field(default_factory=list)
-    last_updated: str  # ISO string
+    last_updated: str
     created_at: str
 
 
@@ -78,6 +128,29 @@ class ConfirmRequest(BaseModel):
     stakeholders: List[str] = Field(default_factory=list)
 
 
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+
+
+class UserOut(BaseModel):
+    id: str
+    email: str
+    name: str
+    role: str = "user"
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserOut
+
+
 # ---------- Mock Extraction Engine ----------
 STAGE_KEYWORDS = {
     "Closed Won": ["signed the contract", "closed won", "we won", "deal is signed",
@@ -102,7 +175,6 @@ NEGATIVE_WORDS = ["concerned", "worried", "budget issue", "expensive", "hesitant
 def extract_from_text(text: str) -> dict:
     lower = text.lower()
 
-    # Stage detection - priority to more definitive stages
     suggested_stage = None
     for stage in ["Closed Won", "Closed Lost", "Negotiation", "Qualified", "Prospecting"]:
         for kw in STAGE_KEYWORDS[stage]:
@@ -112,7 +184,6 @@ def extract_from_text(text: str) -> dict:
         if suggested_stage:
             break
 
-    # Sentiment
     pos_hits = sum(1 for w in POSITIVE_WORDS if w in lower)
     neg_hits = sum(1 for w in NEGATIVE_WORDS if w in lower)
     if suggested_stage == "Closed Lost":
@@ -126,7 +197,6 @@ def extract_from_text(text: str) -> dict:
     else:
         sentiment = "neutral"
 
-    # Next step - sentence with "next" or "follow up"
     sentences = re.split(r'(?<=[.!?])\s+', text.strip())
     next_step = None
     for s in sentences:
@@ -135,13 +205,11 @@ def extract_from_text(text: str) -> dict:
             next_step = s.strip()
             break
 
-    # Stakeholders - capitalized name patterns (First Last) and titles
     stakeholders = []
     name_pattern = re.findall(r'\b([A-Z][a-z]+ [A-Z][a-z]+)\b', text)
     for n in name_pattern:
         if n not in stakeholders:
             stakeholders.append(n)
-    # Also titled roles like "the CFO", "VP of Sales"
     title_pattern = re.findall(
         r'\b(CEO|CFO|CTO|COO|CMO|VP\s+of\s+\w+|Director\s+of\s+\w+|Head\s+of\s+\w+)\b',
         text)
@@ -157,26 +225,74 @@ def extract_from_text(text: str) -> dict:
     }
 
 
-# ---------- Routes ----------
+# ---------- Auth Endpoints ----------
+@api_router.post("/auth/signup", response_model=AuthResponse)
+async def signup(req: SignupRequest):
+    email = req.email.lower().strip()
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user_id = str(uuid.uuid4())
+    doc = {
+        "id": user_id,
+        "email": email,
+        "password_hash": hash_password(req.password),
+        "name": req.name,
+        "role": "user",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.users.insert_one(doc)
+    token = create_access_token(user_id, email)
+    return AuthResponse(
+        token=token,
+        user=UserOut(id=user_id, email=email, name=req.name, role="user"),
+    )
+
+
+@api_router.post("/auth/login", response_model=AuthResponse)
+async def login(req: LoginRequest):
+    email = req.email.lower().strip()
+    user = await db.users.find_one({"email": email})
+    if not user or not verify_password(req.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = create_access_token(user["id"], user["email"])
+    return AuthResponse(
+        token=token,
+        user=UserOut(
+            id=user["id"], email=user["email"], name=user["name"],
+            role=user.get("role", "user"),
+        ),
+    )
+
+
+@api_router.get("/auth/me", response_model=UserOut)
+async def me(user: dict = Depends(get_current_user)):
+    return UserOut(
+        id=user["id"], email=user["email"], name=user["name"],
+        role=user.get("role", "user"),
+    )
+
+
+# ---------- Data Endpoints (all protected) ----------
 @api_router.get("/")
 async def root():
     return {"message": "PipelineGuard API"}
 
 
 @api_router.get("/reps", response_model=List[Rep])
-async def get_reps():
+async def get_reps(user: dict = Depends(get_current_user)):
     docs = await db.reps.find({}, {"_id": 0}).to_list(1000)
     return docs
 
 
 @api_router.get("/deals", response_model=List[Deal])
-async def get_deals():
+async def get_deals(user: dict = Depends(get_current_user)):
     docs = await db.deals.find({}, {"_id": 0}).sort("last_updated", -1).to_list(1000)
     return docs
 
 
 @api_router.get("/deals/{deal_id}", response_model=Deal)
-async def get_deal(deal_id: str):
+async def get_deal(deal_id: str, user: dict = Depends(get_current_user)):
     doc = await db.deals.find_one({"id": deal_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Deal not found")
@@ -184,7 +300,7 @@ async def get_deal(deal_id: str):
 
 
 @api_router.get("/deals/{deal_id}/activities", response_model=List[Activity])
-async def get_deal_activities(deal_id: str):
+async def get_deal_activities(deal_id: str, user: dict = Depends(get_current_user)):
     docs = await db.activities.find(
         {"deal_id": deal_id}, {"_id": 0}
     ).sort("created_at", -1).to_list(1000)
@@ -192,21 +308,17 @@ async def get_deal_activities(deal_id: str):
 
 
 @api_router.post("/extract", response_model=ExtractResponse)
-async def extract(req: ExtractRequest):
+async def extract(req: ExtractRequest, user: dict = Depends(get_current_user)):
     result = extract_from_text(req.text)
-
-    # try to match a deal by company name mentioned in text
     deals = await db.deals.find({}, {"_id": 0}).to_list(1000)
     matched_id = None
     lower_text = req.text.lower()
     for d in deals:
-        # match by company or first word of company
         company_lower = d["company"].lower()
         first_word = company_lower.split()[0] if company_lower else ""
         if company_lower in lower_text or (first_word and len(first_word) > 3 and first_word in lower_text):
             matched_id = d["id"]
             break
-
     return ExtractResponse(
         suggested_stage=result["suggested_stage"],
         suggested_next_step=result["suggested_next_step"],
@@ -217,14 +329,12 @@ async def extract(req: ExtractRequest):
 
 
 @api_router.post("/deals/{deal_id}/confirm", response_model=Activity)
-async def confirm_update(deal_id: str, req: ConfirmRequest):
+async def confirm_update(deal_id: str, req: ConfirmRequest,
+                        user: dict = Depends(get_current_user)):
     deal = await db.deals.find_one({"id": deal_id}, {"_id": 0})
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
-
     now_iso = datetime.now(timezone.utc).isoformat()
-
-    # Update deal
     await db.deals.update_one(
         {"id": deal_id},
         {"$set": {
@@ -235,8 +345,6 @@ async def confirm_update(deal_id: str, req: ConfirmRequest):
             "last_updated": now_iso,
         }}
     )
-
-    # Log activity
     activity = Activity(
         deal_id=deal_id,
         raw_text=req.raw_text,
@@ -251,7 +359,7 @@ async def confirm_update(deal_id: str, req: ConfirmRequest):
 
 
 @api_router.get("/health/summary")
-async def health_summary():
+async def health_summary(user: dict = Depends(get_current_user)):
     deals = await db.deals.find({}, {"_id": 0}).to_list(1000)
     now = datetime.now(timezone.utc)
     total = len(deals)
@@ -273,7 +381,6 @@ async def health_summary():
 
     hygiene_score = round((fresh_count / active_total) * 100)
 
-    # Per-rep hygiene
     reps = await db.reps.find({}, {"_id": 0}).to_list(1000)
     rep_hygiene = []
     for r in reps:
@@ -304,7 +411,7 @@ async def health_summary():
 
 
 @api_router.post("/seed")
-async def seed():
+async def seed(user: Optional[dict] = None):
     await db.reps.delete_many({})
     await db.deals.delete_many({})
     await db.activities.delete_many({})
@@ -321,7 +428,6 @@ async def seed():
         await db.reps.insert_one(r.model_dump())
 
     now = datetime.now(timezone.utc)
-    # (company, value, stage, owner_idx, days_ago, next_step, sentiment, stakeholders)
     deal_data = [
         ("Acme Corporation", 45000, "Prospecting", 0, 2, "Send discovery deck by Friday", "neutral", ["Rebecca Liu"]),
         ("Northwind Traders", 120000, "Qualified", 0, 5, "Schedule demo with CTO team", "positive", ["Alan Wright", "CTO"]),
@@ -342,20 +448,14 @@ async def seed():
         last_updated = (now - timedelta(days=days_ago)).isoformat()
         created_at = (now - timedelta(days=days_ago + 30)).isoformat()
         d = Deal(
-            company=company,
-            value=value,
-            stage=stage,
-            owner_id=reps[owner_idx].id,
-            next_step=next_step,
-            sentiment=sentiment,
-            stakeholders=stakeholders,
-            last_updated=last_updated,
-            created_at=created_at,
+            company=company, value=value, stage=stage,
+            owner_id=reps[owner_idx].id, next_step=next_step,
+            sentiment=sentiment, stakeholders=stakeholders,
+            last_updated=last_updated, created_at=created_at,
         )
         deals_to_seed.append(d)
         await db.deals.insert_one(d.model_dump())
 
-    # Add some sample activities on a couple of deals
     sample_activities = [
         (deals_to_seed[1].id,
          "Had a great call with the CTO team at Northwind. They confirmed budget and want to schedule a demo. Follow up next week.",
@@ -379,6 +479,34 @@ async def seed():
     return {"ok": True, "reps": len(reps), "deals": len(deals_to_seed)}
 
 
+# Protect the /seed route for logged-in users only
+@api_router.post("/seed/reset")
+async def seed_reset(user: dict = Depends(get_current_user)):
+    return await seed()
+
+
+async def seed_admin():
+    email = os.environ["ADMIN_EMAIL"].lower().strip()
+    password = os.environ["ADMIN_PASSWORD"]
+    existing = await db.users.find_one({"email": email})
+    if existing is None:
+        await db.users.insert_one({
+            "id": str(uuid.uuid4()),
+            "email": email,
+            "password_hash": hash_password(password),
+            "name": "Demo Admin",
+            "role": "admin",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        logger.info(f"Seeded admin user: {email}")
+    elif not verify_password(password, existing["password_hash"]):
+        await db.users.update_one(
+            {"email": email},
+            {"$set": {"password_hash": hash_password(password)}}
+        )
+        logger.info(f"Updated admin password: {email}")
+
+
 app.include_router(api_router)
 
 app.add_middleware(
@@ -398,9 +526,10 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_seed():
+    await db.users.create_index("email", unique=True)
+    await seed_admin()
     count = await db.deals.count_documents({})
     if count == 0:
-        # Auto-seed on first boot
         logger.info("No deals found, auto-seeding database...")
         try:
             await seed()
