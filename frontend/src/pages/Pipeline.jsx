@@ -73,16 +73,20 @@ export default function PipelinePage() {
           <LegendItem color="bg-emerald-500" label="< 7 days" />
           <LegendItem color="bg-amber-500" label="7–14 days" />
           <LegendItem color="bg-rose-500" label="> 14 days" />
-          <Button
-            data-testid="reseed-btn"
-            variant="outline"
-            size="sm"
-            className="ml-4"
-            onClick={handleReseed}
-          >
-            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-             Sync CRM
-          </Button>
+         <Button
+  variant="outline"
+  size="sm"
+  className="ml-4"
+  onClick={handleSyncCRM}
+  disabled={loading}
+>
+  <RefreshCw
+    className={`w-3.5 h-3.5 mr-1.5 ${
+      loading ? "animate-spin" : ""
+    }`}
+  />
+  {loading ? "Syncing..." : "Sync CRM"}
+</Button>
         </div>
       </header>
 
