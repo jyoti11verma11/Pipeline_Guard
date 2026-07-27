@@ -145,10 +145,14 @@ export default function PipelinePage() {
                           </div>
 
                           {!d.next_step && d.stage !== "Closed Won" && d.stage !== "Closed Lost" && (
-                            <div className="mt-2 text-[11px] text-rose-300 border-t border-rose-500/20 pt-2">
-                             🤖 AI Recommendation
-                              Schedule a follow-up within the next 48 hours.
-                            </div>
+                           <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                           <div className="text-[11px] font-semibold text-amber-300">
+                           🤖 AI Recommendation
+                           </div>
+                           <div className="text-[11px] text-muted-foreground mt-1">
+                           Schedule a follow-up within the next 48 hours.
+                          </div>
+                          </div>
                           )}
                         </Card>
                       </Link>
