@@ -146,7 +146,8 @@ export default function PipelinePage() {
 
                           {!d.next_step && d.stage !== "Closed Won" && d.stage !== "Closed Lost" && (
                             <div className="mt-2 text-[11px] text-rose-300 border-t border-rose-500/20 pt-2">
-                              ⚠ No next step set
+                             🤖 AI Recommendation
+                              Schedule a follow-up within the next 48 hours.
                             </div>
                           )}
                         </Card>
