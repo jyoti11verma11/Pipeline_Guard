@@ -63,10 +63,10 @@ export default function PipelinePage() {
           </div>
           <h1 className="font-display text-4xl font-bold">Deals by Stage</h1>
           <p className="text-muted-foreground mt-2 max-w-xl">
-            <p className="text-muted-foreground mt-2 max-w-xl">
+           <p className="text-muted-foreground mt-2 max-w-xl">
              Monitor every opportunity, identify stale records, and use AI-powered
               recommendations to keep your CRM accurate and your pipeline moving.
-            </p>
+             </p>
           </p>
         </div>
         <div className="flex items-center gap-2">
