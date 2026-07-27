@@ -155,7 +155,7 @@ export default function PipelinePage() {
                   })}
                   {items.length === 0 && (
                     <div className="text-xs text-muted-foreground px-2 py-6 text-center border border-dashed border-border rounded-md">
-                      No deals in this stage
+                      No opportunities in this stage.
                     </div>
                   )}
                 </div>
