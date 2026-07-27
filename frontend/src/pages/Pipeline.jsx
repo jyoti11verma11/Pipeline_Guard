@@ -69,7 +69,7 @@ export default function PipelinePage() {
             onClick={handleReseed}
           >
             <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-            Reset demo
+             Sync CRM
           </Button>
         </div>
       </header>
