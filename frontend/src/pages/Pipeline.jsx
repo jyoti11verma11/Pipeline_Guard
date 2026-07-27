@@ -133,7 +133,7 @@ const aiAlerts = deals.filter(
       loading ? "animate-spin" : ""
     }`}
   />
-  {loading ? "Syncing..." : "Sync CRM"}
+{loading ? "Refreshing..." : "Refresh Pipeline"}
 </Button>
         </div>
       </header>
