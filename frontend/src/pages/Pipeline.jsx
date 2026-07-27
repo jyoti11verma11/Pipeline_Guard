@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowUpRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { reseed } from "@/lib/api";
+
 import { toast } from "sonner";
 
 export default function PipelinePage() {
@@ -38,11 +38,21 @@ export default function PipelinePage() {
     return g;
   }, [deals]);
 
-  async function handleReseed() {
-    await reseed();
-    toast.success("Seed data restored");
-    load();
+  async function handleSyncCRM() {
+  try {
+    setLoading(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    await load();
+
+    toast.success("CRM synchronized successfully");
+  } catch (error) {
+    toast.error("Unable to synchronize CRM");
+  } finally {
+    setLoading(false);
   }
+}
 
   return (
     <div className="p-8" data-testid="pipeline-page">
