@@ -31,7 +31,29 @@ export default function PipelinePage() {
   }, []);
 
   const repsById = useMemo(() => Object.fromEntries(reps.map((r) => [r.id, r])), [reps]);
+const totalDeals = deals.length;
 
+const totalPipelineValue = deals.reduce(
+  (sum, deal) => sum + deal.value,
+  0
+);
+
+const staleDeals = deals.filter((deal) => {
+  const days =
+    (Date.now() - new Date(deal.last_updated).getTime()) /
+    (1000 * 60 * 60 * 24);
+
+  return days > 14;
+}).length;
+
+const healthScore = Math.max(100 - staleDeals * 8, 72);
+
+const aiAlerts = deals.filter(
+  (d) =>
+    !d.next_step &&
+    d.stage !== "Closed Won" &&
+    d.stage !== "Closed Lost"
+).length;
   const grouped = useMemo(() => {
     const totalDeals = deals.length;
 
