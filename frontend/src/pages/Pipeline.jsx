@@ -115,6 +115,45 @@ const aiAlerts = deals.filter(
 </Button>
         </div>
       </header>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+
+  <Card className="p-5">
+    <div className="text-xs uppercase text-muted-foreground">
+      Total Deals
+    </div>
+    <div className="text-3xl font-bold mt-2">
+      {totalDeals}
+    </div>
+  </Card>
+
+  <Card className="p-5">
+    <div className="text-xs uppercase text-muted-foreground">
+      Pipeline Value
+    </div>
+    <div className="text-3xl font-bold mt-2">
+      {formatCurrency(totalPipelineValue)}
+    </div>
+  </Card>
+
+  <Card className="p-5">
+    <div className="text-xs uppercase text-muted-foreground">
+      Health Score
+    </div>
+    <div className="text-3xl font-bold mt-2 text-emerald-400">
+      {healthScore}%
+    </div>
+  </Card>
+
+  <Card className="p-5">
+    <div className="text-xs uppercase text-muted-foreground">
+      AI Alerts
+    </div>
+    <div className="text-3xl font-bold mt-2 text-amber-400">
+      {aiAlerts}
+    </div>
+  </Card>
+
+</div>
 
       {loading ? (
         <div className="text-muted-foreground">Loading pipeline…</div>
